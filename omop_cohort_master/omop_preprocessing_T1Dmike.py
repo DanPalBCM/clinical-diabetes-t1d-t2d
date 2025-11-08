@@ -415,7 +415,37 @@ MEASUREMENT_TYPES = {
         ],
         'must_have': [],
         'exclude': []
-    }
+    },
+    'free_t3': {
+    'keywords': [
+        'free t3', 'free triiodothyronine', 'ft3', 'free t-3', 'triiodothyronine free',
+        'free tri-iodothyronine', 't3 free', 'thyroid hormone free t3',
+        'unbound t3', 'f-t3'
+    ],
+    'must_have': [],
+    'exclude': ['total', 'bound', 'reverse', 'rt3']
+},
+
+'glucose_2h_postprandial': {
+    'keywords': [
+        '2 hour glucose', '2h glucose postprandial', '2hr postprandial glucose',
+        'glucose 2 hours', 'postprandial glucose 2h', '2 hour post meal glucose',
+        'glucose 2hr post', '2h post glucose', 'glucose 120 min', 
+        'glucose 2 hours after meal', 'post meal glucose 2 hour'
+    ],
+    'must_have': ['glucose', 'gluc'],
+    'exclude': ['ogtt', 'tolerance', 'fasting']
+},
+
+'insulin_autoantibody': {
+    'keywords': [
+        'insulin autoantibody', 'insulin ab', 'insulin antibodies',
+        'anti-insulin autoantibody', 'insulin autoantibodies',
+        'iaa insulin', 'auto insulin antibody', 'insulin ab test'
+    ],
+    'must_have': [],
+    'exclude': ['receptor', 'binding', 'c-peptide']
+}
 }
 
 # Main diagnosis codes for Type 1 Diabetes
@@ -664,9 +694,14 @@ def analyze_measurements(person_ids=None, chunk_size=100000):
             total_rows += len(chunk)
             print(f"  Processing chunk {i+1} ({total_rows:,} rows processed)...", end='\r')
             
+            # Reset index to ensure proper alignment
+            chunk = chunk.reset_index(drop=True)
+            
             # Filter by person_ids if provided
             if person_ids and 'PERSON_ID' in chunk.columns:
                 chunk = chunk[chunk['PERSON_ID'].isin(person_ids)]
+                # Reset index again after filtering
+                chunk = chunk.reset_index(drop=True)
             
             # Track unique patients
             if 'PERSON_ID' in chunk.columns:
@@ -686,37 +721,42 @@ def analyze_measurements(person_ids=None, chunk_size=100000):
             # Track which patients have which measurements using regex
             if 'PERSON_ID' in chunk.columns:
                 for measure_type, config in MEASUREMENT_TYPES.items():
-                    # Initialize mask as all False
-                    keyword_mask = pd.Series([False] * len(chunk))
+                    # Initialize mask with proper index alignment
+                    keyword_mask = pd.Series([False] * len(chunk), index=chunk.index)
                     
                     # Check for keyword matches using regex for flexible matching
                     for keyword in config['keywords']:
                         # Create case-insensitive regex pattern with word boundaries
                         pattern = r'(?i)\b' + re.escape(keyword) + r'\b'
-                        keyword_mask |= chunk['MEASUREMENT_SOURCE_VALUE'].str.contains(
+                        temp_mask = chunk['MEASUREMENT_SOURCE_VALUE'].str.contains(
                             pattern, regex=True, na=False, case=False
                         )
+                        # Ensure alignment
+                        keyword_mask = keyword_mask | temp_mask.reindex(keyword_mask.index, fill_value=False)
                     
                     # Apply must_have filters with regex
                     if config['must_have']:
-                        must_have_mask = pd.Series([False] * len(chunk))
+                        must_have_mask = pd.Series([False] * len(chunk), index=chunk.index)
                         for must in config['must_have']:
                             pattern = r'(?i)\b' + re.escape(must) + r'\b'
-                            must_have_mask |= chunk['MEASUREMENT_SOURCE_VALUE'].str.contains(
+                            temp_mask = chunk['MEASUREMENT_SOURCE_VALUE'].str.contains(
                                 pattern, regex=True, na=False, case=False
                             )
-                        keyword_mask &= must_have_mask
+                            must_have_mask = must_have_mask | temp_mask.reindex(must_have_mask.index, fill_value=False)
+                        keyword_mask = keyword_mask & must_have_mask
                     
                     # Apply exclusions with regex
                     for exclude in config['exclude']:
                         pattern = r'(?i)\b' + re.escape(exclude) + r'\b'
-                        keyword_mask &= ~chunk['MEASUREMENT_SOURCE_VALUE'].str.contains(
+                        exclude_mask = chunk['MEASUREMENT_SOURCE_VALUE'].str.contains(
                             pattern, regex=True, na=False, case=False
                         )
+                        keyword_mask = keyword_mask & ~exclude_mask.reindex(keyword_mask.index, fill_value=False)
                     
                     # Track patients with this measurement
                     if keyword_mask.any():
-                        patients_with_measure = chunk[keyword_mask]['PERSON_ID'].unique()
+                        # Use loc to ensure proper indexing
+                        patients_with_measure = chunk.loc[keyword_mask, 'PERSON_ID'].unique()
                         if measure_type not in patient_measurement_presence:
                             patient_measurement_presence[measure_type] = set()
                         patient_measurement_presence[measure_type].update(patients_with_measure)
@@ -748,6 +788,8 @@ def analyze_measurements(person_ids=None, chunk_size=100000):
         
     except Exception as e:
         print(f"\nError analyzing measurements: {e}")
+        import traceback
+        traceback.print_exc()
 
 def analyze_medications(person_ids=None, chunk_size=100000):
     """Analyze medications (assuming there's a medications folder with relevant CSV)"""

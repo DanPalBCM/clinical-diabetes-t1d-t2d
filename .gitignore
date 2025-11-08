@@ -1,0 +1,11 @@
+# Ignore everything
+*
+
+# Keep this file so the rules are shared
+!.gitignore
+
+# Allow directories so Git can see inside them
+!*/
+
+# Allow Python source files anywhere (recursively)
+!*.py

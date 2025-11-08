@@ -7,513 +7,558 @@ import numpy as np
 import re
 # Configuration
 S3_BUCKET = 'dsw-sagemaker-dev-s3'
-S3_PREFIX = 'OMOP_data_extractions/T2D_Tosur/'
+S3_PREFIX = 'OMOP_data_extractions/Rett_syndrome/'
 
 #### input
 DRUG_CLASSES = {
-'Insulins': [
-    'insulin aspart', 'insulin degludec', 'insulin detemir', 'insulin glargine',
-    'insulin glulisine', 'insulin human', 'insulin regular', 'insulin nph',
-    'insulin isophane', 'insulin lispro', 'insulin lispro protamine',
-    'inhaled human insulin', 'technosphere insulin'
-],
-'Biguanide': ['metformin'],
-'GLP1_agonists': [
-    'albiglutide', 'dulaglutide', 'exenatide', 'liraglutide', 'lixisenatide',
-    'semaglutide', 'tirzepatide'
-],
-'DPP4_inhibitors': [
-    'alogliptin', 'anagliptin', 'evogliptin', 'gemigliptin', 'linagliptin',
-    'saxagliptin', 'sitagliptin', 'teneligliptin', 'vildagliptin'
-],
-'SGLT2_inhibitors': [
-    'canagliflozin', 'dapagliflozin', 'empagliflozin', 'ertugliflozin',
-    'ipragliflozin', 'luseogliflozin', 'remogliflozin', 'sotagliflozin', 'tofogliflozin'
-],
-'Sulfonylureas': [
-    'acetohexamide', 'chlorpropamide', 'glimepiride', 'glipizide',
-    'glyburide', 'glibenclamide', 'tolazamide', 'tolbutamide'
-],
-'Meglitinides': ['nateglinide', 'repaglinide'],
-'Thiazolidinediones': ['lobeglitazone', 'pioglitazone', 'rosiglitazone'],
-'Alpha_glucosidase_inhibitors': ['acarbose', 'miglitol', 'voglibose'],
-'Amylin_analogue': ['pramlintide']
-}
-# Set to None to include all drugs:
-# DRUG_CLASSES = None
-
-# Example: Filter for specific conditions (optional)
-CONDITION_CODES = {
-'DKA': {
-    'ICD9': [
-        '250.11',  # Diabetes mellitus with ketoacidosis, Type 1
-        '250.13',  # Diabetes mellitus with ketoacidosis, Type 2
-        '250.10',  # Diabetes mellitus with ketoacidosis, Type 1, uncontrolled
-        '250.12',  # Diabetes mellitus with ketoacidosis, Type 2, uncontrolled
+    'Eslicarbazepine': [
+        'eslicarbazepine', 'aptiom'
     ],
-    'ICD10': [
-        # Type 1 Diabetes (DKA)
-        #'E10.1',   # Type 1 diabetes mellitus with ketoacidosis
-        'E10.10',  # Type 1 diabetes mellitus with ketoacidosis, without coma
-        'E10.11',  # Type 1 diabetes mellitus with ketoacidosis with coma
-
-        # Type 2 Diabetes (DKA)
-        #'E11.1',   # Type 2 diabetes mellitus with ketoacidosis
-        'E11.10',  # Type 2 diabetes mellitus with ketoacidosis, without coma
-        'E11.11',  # Type 2 diabetes mellitus with ketoacidosis with coma
-
-        # Other Forms of Diabetes (DKA)
-        #'E13.10',  # Other specified diabetes mellitus with ketoacidosis, without coma
-        #'E13.11',  # Other specified diabetes mellitus with ketoacidosis with coma
-
-        # Secondary Diabetes (DKA)
-        #'E08.10',  # Diabetes due to underlying condition with ketoacidosis, without coma
-        #'E08.11',  # Diabetes due to underlying condition with ketoacidosis with coma
-
-        # Coma and Complications
-        #'E09.10',   # Type 1 diabetes mellitus, unspecified
-        #'E09.11',   # Type 2 diabetes mellitus, unspecified
+    'Brivaracetam': [
+        'brivaracetam', 'briviact'
+    ],
+    'Clobazam': [
+        'clobazam', 'clb', 'onfi', 'frisium'
+    ],
+    'Acetazolamide': [
+        'acetazolamide', 'diamox'
+    ],
+    'Diazepam': [
+        'diazepam', 'diazem', 'valium'
+    ],
+    'Cannabidiol': [
+        'cannabidiol', 'epidiolex'
+    ],
+    'Fenfluramine': [
+        'fenfluramine', 'fintepla'
+    ],
+    'Perampanel': [
+        'perampanel', 'fycompa'
+    ],
+    'Gabapentin': [
+        'gabapentin', 'gbp', 'neurontin'
+    ],
+    'Ketogenic_diet': [
+        'ketogenic diet', 'keto diet'
+    ],
+    'Lacosamide': [
+        'lacosamide', 'lcm', 'vimpat'
+    ],
+    'Lamotrigine': [
+        'lamotrigine', 'ltg', 'lamictal'
+    ],
+    'Levetiracetam': [
+        'levetiracetam', 'lvt', 'keppra'
+    ],
+    'Phenobarbital': [
+        'phenobarbital', 'phb', 'luminal'
+    ],
+    'Rufinamide': [
+        'rufinamide', 'rfm', 'banzel'
+    ],
+    'Sultiame': [
+        'sultiame', 'sulthiame'
+    ],
+    'Topiramate': [
+        'topiramate', 'tpm', 'topamax', 'trokendi'
+    ],
+    'Carbamazepine': [
+        'carbamazepine', 'tegretol'
+    ],
+    'Vigabatrin': [
+        'vigabatrin', 'vgb', 'sabril', 'vigadrone'
+    ],
+    'Valproic_acid': [
+        'valproic acid', 'valproate', 'divalproex', 'vpa', 'depakote', 'depakene', 'micropakine'
+    ],
+    'Vagal_Nerve_Stimulator': [
+        'vagal nerve stimulator', 'vns', 'vagus nerve stimulator'
+    ],
+    'Cenobamate': [
+        'cenobamate', 'xcopri'
+    ],
+    'Zonisamide': [
+        'zonisamide', 'zns', 'zonegran'
     ]
-},
-'Ketosis': {
-    'ICD9': ['276.2', '790.6'],
-    'ICD10': ['E87.2']
-},
-'Dyslipidemia': {
-    'ICD9': ['272.'],
-    'ICD10': ['E78.0', 'E78.1', 'E78.2', 'E78.3', 'E78.4', 'E78.5', 'E78.6']
-},
-'Hypertension': {
-    'ICD9': ['401.', '402.', '403.', '404.', '405.'],
-    'ICD10': ['I10.', 'I11.', 'I12.', 'I13.', 'I15.', 'H35.03', 'I67.4']
-},
-'Diabetic_Retinopathy': {
-    'ICD9': ['362.01', '362.02', '362.03', '362.04', '362.05', '362.06'],
-    'ICD10': ['E08.35', 'E09.35', 'E10.35', 'E11.35', 'E13.35', 'E08.31', 'E08.37',
-                'E09.31', 'E09.37', 'E10.31', 'E10.37', 'E11.31', 'E11.37', 'E13.31',
-                'E13.37', 'E08.32', 'E09.32', 'E10.32', 'E11.32', 'E13.32', 'E08.33',
-                'E09.33', 'E10.33', 'E11.33', 'E13.33', 'E08.34', 'E09.34', 'E10.34',
-                'E11.34', 'E13.34']
-},
-'Microalbuminuria': {
-    'ICD9': ['791.06'],
-    'ICD10': ['R80.9']
-},
-'Neuropathy': {
-    'ICD9': ['250.61', '250.63', '250.60', '250.62', '357.2'],
-    'ICD10': ['E10.40', 'E10.41', 'E10.42', 'E10.43', 'E10.44', 'E10.49',
-                'E11.40', 'E11.41', 'E11.42', 'E11.45']
-},
-'Hypoglycemia': {
-    'ICD9': ['250.3', '250.8', '251.0', '251.1', '251.2', '270.3', '775.0', '775.6', '962.39'],
-    'ICD10': ['E08.641', 'E08.649', 'E09.641', 'E09.649', 'E10.641', 'E10.649',
-                'E11.641', 'E11.649', 'E13.641', 'E13.649', 'E15', 'E16.0', 'E16.1',
-                'E16.2', 'T38.3X1A', 'T38.3X1D', 'T38.3X1S', 'T38.3X2A', 'T38.3X2D',
-                'T38.3X2S', 'T38.3X3A', 'T38.3X3D', 'T38.3X3S', 'T38.3X4A', 'T38.3X4D',
-                'T38.3X4S', 'T38.3X5A', 'T38.3X5D', 'T38.3X5S']
 }
+
+CONDITION_CODES = {
+    'Rett_Syndrome': {
+        'ICD9': [
+            '330.8'  # Other specified cerebral degenerations in childhood
+        ],
+        'ICD10': [
+            'F84.2'  # Rett's syndrome
+        ]
+    },
+    'Epilepsy_Generalized': {
+        'ICD9': [
+            '345.1',   # Generalized convulsive epilepsy
+            '345.10',  # Generalized convulsive epilepsy without intractable epilepsy
+            '345.11'   # Generalized convulsive epilepsy with intractable epilepsy
+        ],
+        'ICD10': [
+            'G40.3',    # Generalized idiopathic epilepsy and epileptic syndromes
+            'G40.30',   # Generalized idiopathic epilepsy and epileptic syndromes, not intractable
+            'G40.301',  # Generalized idiopathic epilepsy and epileptic syndromes, not intractable, with status epilepticus
+            'G40.309',  # Generalized idiopathic epilepsy and epileptic syndromes, not intractable, without status epilepticus
+            'G40.31',   # Generalized idiopathic epilepsy and epileptic syndromes, intractable
+            'G40.311',  # Generalized idiopathic epilepsy and epileptic syndromes, intractable, with status epilepticus
+            'G40.319',  # Generalized idiopathic epilepsy and epileptic syndromes, intractable, without status epilepticus
+            'G40.4',    # Other generalized epilepsy and epileptic syndromes
+            'G40.40',   # Other generalized epilepsy and epileptic syndromes, not intractable
+            'G40.401',  # Other generalized epilepsy and epileptic syndromes, not intractable, with status epilepticus
+            'G40.409',  # Other generalized epilepsy and epileptic syndromes, not intractable, without status epilepticus
+            'G40.41',   # Other generalized epilepsy and epileptic syndromes, intractable
+            'G40.411',  # Other generalized epilepsy and epileptic syndromes, intractable, with status epilepticus
+            'G40.419'   # Other generalized epilepsy and epileptic syndromes, intractable, without status epilepticus
+        ]
+    },
+    'Epilepsy_Focal': {
+        'ICD9': [
+            '345.4',   # Localization-related (focal) (partial) epilepsy and epileptic syndromes with complex partial seizures
+            '345.40',  # Localization-related (focal) (partial) epilepsy without intractable epilepsy
+            '345.41'   # Localization-related (focal) (partial) epilepsy with intractable epilepsy
+        ],
+        'ICD10': [
+            'G40.0',    # Localization-related (focal) (partial) idiopathic epilepsy and epileptic syndromes with seizures of localized onset
+            'G40.00',   # Localization-related (focal) (partial) idiopathic epilepsy, not intractable
+            'G40.001',  # Localization-related (focal) (partial) idiopathic epilepsy, not intractable, with status epilepticus
+            'G40.009',  # Localization-related (focal) (partial) idiopathic epilepsy, not intractable, without status epilepticus
+            'G40.01',   # Localization-related (focal) (partial) idiopathic epilepsy, intractable
+            'G40.011',  # Localization-related (focal) (partial) idiopathic epilepsy, intractable, with status epilepticus
+            'G40.019',  # Localization-related (focal) (partial) idiopathic epilepsy, intractable, without status epilepticus
+            'G40.1',    # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures
+            'G40.10',   # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures, not intractable
+            'G40.101',  # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures, not intractable, with status epilepticus
+            'G40.109',  # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures, not intractable, without status epilepticus
+            'G40.11',   # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures, intractable
+            'G40.111',  # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures, intractable, with status epilepticus
+            'G40.119',  # Localization-related (focal) (partial) symptomatic epilepsy with simple partial seizures, intractable, without status epilepticus
+            'G40.2',    # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures
+            'G40.20',   # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures, not intractable
+            'G40.201',  # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures, not intractable, with status epilepticus
+            'G40.209',  # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures, not intractable, without status epilepticus
+            'G40.21',   # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures, intractable
+            'G40.211',  # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures, intractable, with status epilepticus
+            'G40.219'   # Localization-related (focal) (partial) symptomatic epilepsy with complex partial seizures, intractable, without status epilepticus
+        ]
+    },
+    'Epilepsy_Unspecified': {
+        'ICD9': [
+            '345.9',   # Epilepsy, unspecified
+            '345.90',  # Epilepsy, unspecified, without intractable epilepsy
+            '345.91'   # Epilepsy, unspecified, with intractable epilepsy
+        ],
+        'ICD10': [
+            'G40.9',    # Epilepsy, unspecified
+            'G40.90',   # Epilepsy, unspecified, not intractable
+            'G40.901',  # Epilepsy, unspecified, not intractable, with status epilepticus
+            'G40.909',  # Epilepsy, unspecified, not intractable, without status epilepticus
+            'G40.91',   # Epilepsy, unspecified, intractable
+            'G40.911',  # Epilepsy, unspecified, intractable, with status epilepticus
+            'G40.919'   # Epilepsy, unspecified, intractable, without status epilepticus
+        ]
+    },
+    'Seizures_Other': {
+        'ICD9': [
+            '780.39',  # Other convulsions
+            '780.3'    # Convulsions
+        ],
+        'ICD10': [
+            'G40.89',  # Other seizures
+            'R56.9',   # Unspecified convulsions
+            'R56.1',   # Post traumatic seizures
+            'R56.0'    # Febrile convulsions
+        ]
+    },
+    'Developmental_Delays': {
+        'ICD9': [
+            '315.9',   # Unspecified delay in development
+            '319'      # Unspecified mental retardation
+        ],
+        'ICD10': [
+            'F88',     # Other disorders of psychological development
+            'F89',     # Unspecified disorder of psychological development
+            'F81.9',   # Developmental disorder of scholastic skills, unspecified
+            'F82',     # Specific developmental disorder of motor function
+            'F83',     # Mixed specific developmental disorders
+            'F79',     # Unspecified intellectual disabilities
+            'R62.50'   # Unspecified lack of expected normal physiological development in childhood
+        ]
+    },
+    'Respiratory_Problems': {
+        'ICD9': [
+            '786.05',  # Shortness of breath
+            '786.09',  # Other respiratory abnormalities
+            '519.9'    # Unspecified disease of respiratory system
+        ],
+        'ICD10': [
+            'R06.02',  # Shortness of breath
+            'R06.00',  # Dyspnea, unspecified
+            'R06.89',  # Other abnormalities of breathing
+            'R06.1',   # Stridor
+            'R06.4',   # Hyperventilation
+            'J98.9',   # Respiratory disorder, unspecified
+            'J96.90'   # Respiratory failure, unspecified, type unspecified
+        ]
+    },
+    'Speech_Language_Disorders': {
+        'ICD9': [
+            '315.31',  # Expressive language disorder
+            '315.32',  # Mixed receptive-expressive language disorder
+            '315.39'   # Other developmental speech or language disorder
+        ],
+        'ICD10': [
+            'F80.9',   # Developmental disorder of speech and language, unspecified
+            'F80.1',   # Expressive language disorder
+            'F80.2',   # Mixed receptive-expressive language disorder
+            'F80.89',  # Other developmental disorders of speech and language
+            'R47.9',   # Unspecified speech disturbances
+            'R47.1'    # Dysarthria and anarthria
+        ]
+    },
+    'Motor_Dysfunction': {
+        'ICD9': [
+            '781.3',   # Lack of coordination
+            '315.4'    # Developmental coordination disorder
+        ],
+        'ICD10': [
+            'F82',     # Specific developmental disorder of motor function
+            'R27.9',   # Unspecified lack of coordination
+            'R27.0',   # Ataxia, unspecified
+            'G25.9',   # Extrapyramidal and movement disorder, unspecified
+            'R25.9'    # Unspecified abnormal involuntary movements
+        ]
+    },
+    'Growth_Disorders': {
+        'ICD9': [
+            '783.43',  # Failure to gain weight
+            '783.41'   # Failure to thrive
+        ],
+        'ICD10': [
+            'R62.51',  # Failure to thrive (child)
+            'R62.7',   # Adult failure to thrive
+            'R62.0',   # Delayed milestone in childhood
+            'R62.9'    # Unspecified lack of expected normal physiological development
+        ]
+    },
+    'Feeding_Difficulties': {
+        'ICD9': [
+            '783.3',   # Feeding difficulties and mismanagement
+            '787.2'    # Dysphagia
+        ],
+        'ICD10': [
+            'R63.3',   # Feeding difficulties
+            'R13.19',  # Other dysphagia
+            'R13.10',  # Dysphagia, unspecified
+            'P92.9'    # Feeding problem of newborn, unspecified
+        ]
+    },
+    'Sleep_Disorders': {
+        'ICD9': [
+            '780.50',  # Sleep disturbance, unspecified
+            '327.9'    # Unspecified organic sleep disorder
+        ],
+        'ICD10': [
+            'G47.9',   # Sleep disorder, unspecified
+            'G47.00',  # Insomnia, unspecified
+            'G47.8',   # Other sleep disorders
+            'F51.9'    # Sleep disorder not due to a substance or known physiological condition, unspecified
+        ]
+    },
+    'Autism_Spectrum_Related': {
+        'ICD9': [
+            '299.00'   # Autistic disorder, current or active state
+        ],
+        'ICD10': [
+            'F84.0',   # Autistic disorder
+            'F84.9',   # Pervasive developmental disorder, unspecified
+            'F84.3',   # Other childhood disintegrative disorder
+            'F84.5'    # Asperger's syndrome
+        ]
+    },
+    'Scoliosis': {
+        'ICD9': [
+            '737.30'   # Idiopathic scoliosis
+        ],
+        'ICD10': [
+            'M41.9',   # Scoliosis, unspecified
+            'M41.20',  # Other idiopathic scoliosis, site unspecified
+            'Q67.5'    # Congenital deformity of spine
+        ]
+    }
 }
+# Example: Filter for specific conditions (optional)
+
 # Set to None to include all conditions:
 # CONDITION_CODES = None
 
 # Example: Filter for specific measurements (optional)
 MEASUREMENT_TYPES = {
-    # Clinical Measurements
-    'height': {
+    # Vital Signs
+    'temperature': {
         'keywords': [
-            'height', 'body height', 'stature', 'standing height', 'ht',
-            'patient height', 'measured height', 'height measurement'
+            'temp', 'temperature', 'body temp', 'core temp', 'body temperature',
+            'temperature measurement', 'patient temperature', 'fever'
         ],
         'must_have': [],
-        'exclude': ['weight', 'sitting', 'fundal']
+        'exclude': ['room', 'ambient', 'environmental']
     },
     
+    'heart_rate': {
+        'keywords': [
+            'hr', 'heart rate', 'pulse', 'bpm', 'beats per minute',
+            'heart rhythm', 'cardiac rate', 'pulse rate'
+        ],
+        'must_have': [],
+        'exclude': ['respiratory', 'breathing']
+    },
+    
+    'blood_pressure': {
+        'keywords': [
+            'bp', 'blood pressure', 'systolic', 'diastolic', 'sbp', 'dbp',
+            'hypertension', 'hypotension', 'pressure reading'
+        ],
+        'must_have': [],
+        'exclude': ['intracranial', 'intraocular', 'airway']
+    },
+    
+    'respiratory_rate': {
+        'keywords': [
+            'rr', 'resp rate', 'respiratory rate', 'breathing rate',
+            'respirations', 'breaths per minute', 'respiration count'
+        ],
+        'must_have': [],
+        'exclude': ['heart', 'pulse', 'cardiac']
+    },
+    
+    'oxygen_saturation': {
+        'keywords': [
+            'spo2', 'o2 sat', 'oxygen sat', 'pulse ox', 'sat',
+            'oxygen saturation', 'pulse oximetry', 'saturation level'
+        ],
+        'must_have': [],
+        'exclude': ['oxygen therapy', 'oxygen flow']
+    },
+    
+    # Neurological
+    'seizure_activity': {
+        'keywords': [
+            'seizure', 'convulsion', 'epileptic', 'ictal', 'seizure count',
+            'seizure frequency', 'seizure duration', 'seizure type', 'epileptic activity'
+        ],
+        'must_have': [],
+        'exclude': ['medication', 'therapy', 'prevention']
+    },
+    
+    'level_of_consciousness': {
+        'keywords': [
+            'loc', 'consciousness', 'alert', 'responsive', 'gcs', 'glasgow',
+            'glasgow coma scale', 'alertness', 'responsiveness', 'mental status'
+        ],
+        'must_have': [],
+        'exclude': ['seizure', 'medication']
+    },
+    
+    'neurological_assessment': {
+        'keywords': [
+            'neuro', 'neurological', 'reflexes', 'motor', 'sensory',
+            'neurological exam', 'neuro assessment', 'motor function', 'sensory function'
+        ],
+        'must_have': [],
+        'exclude': ['therapy', 'medication']
+    },
+    
+    # Respiratory
+    'oxygen_therapy': {
+        'keywords': [
+            'o2', 'oxygen', 'fio2', 'nasal cannula', 'mask', 'ventilator',
+            'oxygen therapy', 'oxygen flow', 'oxygen delivery', 'supplemental oxygen'
+        ],
+        'must_have': [],
+        'exclude': ['saturation', 'monitoring']
+    },
+    
+    'respiratory_support': {
+        'keywords': [
+            'cpap', 'bipap', 'mechanical ventilation', 'intubated',
+            'ventilator support', 'respiratory assistance', 'breathing support'
+        ],
+        'must_have': [],
+        'exclude': ['weaning', 'discontinued']
+    },
+    
+    'breath_sounds': {
+        'keywords': [
+            'lung sounds', 'breath sounds', 'wheeze', 'rales', 'rhonchi',
+            'respiratory sounds', 'lung assessment', 'chest sounds', 'auscultation'
+        ],
+        'must_have': [],
+        'exclude': ['therapy', 'medication']
+    },
+    
+    # Gastrointestinal
+    'feeding': {
+        'keywords': [
+            'feeding', 'nutrition', 'intake', 'peg', 'g-tube', 'gastrostomy',
+            'feeding tube', 'nutritional intake', 'oral feeding', 'tube feeding'
+        ],
+        'must_have': [],
+        'exclude': ['medication', 'preparation']
+    },
+    
+    'swallowing': {
+        'keywords': [
+            'swallow', 'dysphagia', 'aspiration', 'swallowing function',
+            'swallow assessment', 'swallow study', 'deglutition'
+        ],
+        'must_have': [],
+        'exclude': ['therapy', 'exercise']
+    },
+    
+    'bowel_movement': {
+        'keywords': [
+            'bm', 'bowel', 'stool', 'constipation', 'bowel movement',
+            'defecation', 'bowel function', 'elimination', 'bowel habits'
+        ],
+        'must_have': [],
+        'exclude': ['medication', 'therapy']
+    },
+    
+    # Mobility
+    'mobility_assessment': {
+        'keywords': [
+            'mobility', 'ambulation', 'walking', 'wheelchair', 'bed mobility',
+            'movement assessment', 'mobility status', 'functional mobility'
+        ],
+        'must_have': [],
+        'exclude': ['therapy', 'equipment']
+    },
+    
+    'physical_therapy': {
+        'keywords': [
+            'pt', 'physical therapy', 'range of motion', 'rom',
+            'physical rehabilitation', 'mobility therapy', 'movement therapy'
+        ],
+        'must_have': [],
+        'exclude': ['assessment', 'evaluation']
+    },
+    
+    'occupational_therapy': {
+        'keywords': [
+            'ot', 'occupational therapy', 'fine motor', 'occupational rehabilitation',
+            'functional therapy', 'daily living skills', 'adaptive skills'
+        ],
+        'must_have': [],
+        'exclude': ['assessment', 'evaluation']
+    },
+    
+    # Growth & Development
     'weight': {
         'keywords': [
-            'weight', 'body weight', 'wt', 'body mass', 'patient weight',
-            'measured weight', 'weight measurement', 'actual weight', 'bw'
+            'weight', 'wt', 'body weight', 'patient weight',
+            'measured weight', 'weight measurement', 'body mass'
         ],
         'must_have': [],
         'exclude': ['height', 'birth', 'ideal', 'target', 'gain', 'loss']
     },
     
-    'waist_circumference': {
+    'height': {
         'keywords': [
-            'waist circumference', 'waist', 'abdominal circumference',
-            'waist measurement', 'waist circ', 'abdominal girth',
-            'waist size', 'wc'
+            'height', 'ht', 'length', 'stature', 'body height',
+            'standing height', 'height measurement', 'patient height'
         ],
         'must_have': [],
-        'exclude': ['hip', 'chest', 'head', 'arm']
+        'exclude': ['weight', 'sitting', 'fundal']
     },
     
-    'bmi': {
+    'head_circumference': {
         'keywords': [
-            'bmi', 'body mass index', 'body-mass index', 'bodymass index',
-            'quetelet index', 'bmi value', 'calculated bmi'
+            'head circ', 'hc', 'occipital frontal', 'ofc',
+            'head circumference', 'cranial circumference', 'head measurement'
         ],
         'must_have': [],
-        'exclude': ['percentile', 'z-score', 'zscore']
+        'exclude': ['chest', 'abdominal']
     },
     
-    'bmi_percentile': {
+    # Sleep
+    'sleep_patterns': {
         'keywords': [
-            'bmi percentile', 'body mass index percentile', 'bmi %',
-            'bmi %ile', 'bmi percentage', 'pediatric bmi percentile',
-            'bmi for age percentile'
-        ],
-        'must_have': ['percentile', '%'],
-        'exclude': ['z-score', 'zscore', 'adult']
-    },
-    'hba1c': {
-        'keywords': [
-            'hba1c', 'hemoglobin a1c', 'a1c', 'glycosylated hemoglobin',
-            'glycated hemoglobin', 'labhba1c', 'eag', 'hgb a1c', 'hb a1c',
-            'glycohemoglobin', 'diabetic control', 'glucose control',
-            'hemoglobin', 'hgb', 'glyco', 'glycated', 'diabetic',
-            'hba', 'a1c%', 'hgba1c', 'hb-a1c', 'hemoglobin-a1c'
+            'sleep', 'rest', 'sleep study', 'apnea', 'sleep pattern',
+            'sleep quality', 'sleep duration', 'sleep assessment', 'polysomnography'
         ],
         'must_have': [],
-        'exclude': ['mean', 'estimated', 'average']
+        'exclude': ['medication', 'therapy']
     },
     
-    'fasting_glucose': {
+    'sleep_disturbance': {
         'keywords': [
-            'fasting', 'fbs', 'fpg', 'fasting glucose', 'fasting blood sugar',
-            'fasting plasma glucose', 'glucose fasting', 'fasting blood glucose'
-        ],
-        'must_have': ['glucose', 'sugar', 'gluc'],
-        'exclude': ['ogtt', 'tolerance', 'random', 'postprandial', '2h', '2hr', '2 h', 'after', 'post']
-    },
-    
-    'serum_glucose': {
-        'keywords': [
-            'serum glucose', 'glucose', 'blood glucose', 'plasma glucose',
-            'random glucose', 'glucose serum', 'gluc', 'bg', 'blood sugar',
-            'rbs', 'glucose level'
+            'insomnia', 'sleep disorder', 'restless', 'sleep disturbance',
+            'sleep problems', 'sleep disruption', 'restless sleep'
         ],
         'must_have': [],
-        'exclude': ['fasting', 'ogtt', 'tolerance', '2h', '2hr', 'urine', 'csf']
+        'exclude': ['medication', 'therapy']
     },
     
-    'c_peptide': {
+    # Behavioral
+    'behavioral_assessment': {
         'keywords': [
-            'c-peptide', 'c peptide', 'cpeptide', 'connecting peptide',
-            'serum c peptide', 'plasma c-peptide', 'c peptide serum',
-            'c-pep', 'c pep', 'cpep', 'connecting pep', 'c_peptide',
-            'c_pep', 'serum peptide', 'plasma peptide', 'blood c-peptide',
-            'c-pep level', 'cpeptide level'
+            'behavior', 'agitation', 'irritability', 'mood', 'behavioral assessment',
+            'behavioral observation', 'behavioral changes', 'temperament'
         ],
         'must_have': [],
-        'exclude': ['urine', 'brain', 'bnp', 'pro', 'natriuretic']
+        'exclude': ['therapy', 'intervention']
     },
     
-    'urine_c_peptide': {
+    'communication': {
         'keywords': [
-            'urine c-peptide', 'urine c peptide', 'urinary c-peptide',
-            'c-peptide urine', 'c peptide urine', 'urine cpeptide',
-            '24hr c-peptide', '24 hour c-peptide'
-        ],
-        'must_have': ['peptide'],
-        'exclude': ['serum', 'plasma', 'blood']
-    },
-    
-    'glucose_2h_ogtt': {
-        'keywords': [
-            '2-h glucose', '2 hour glucose', '2h glucose', 'ogtt',
-            'oral glucose tolerance test', 'glucose tolerance test',
-            '2-hour post glucose', '2hr glucose', 'glucose 2 hour',
-            'glucose tolerance 2h', 'gtt 2 hour', 'post load glucose',
-            '120 min', '120 minute', 'two hour glucose'
-        ],
-        'must_have': ['glucose', 'gluc'],
-        'exclude': ['fasting', 'baseline']
-    },
-    
-    'hdl': {
-        'keywords': [
-            'hdl', 'hdl cholesterol', 'hdl-c', 'high density lipoprotein',
-            'good cholesterol', 'alpha lipoprotein', 'hdl chol'
+            'communication', 'speech', 'vocalization', 'language',
+            'communication skills', 'verbal communication', 'nonverbal communication'
         ],
         'must_have': [],
-        'exclude': ['ratio', 'total', 'non-hdl', 'vldl']
+        'exclude': ['therapy', 'intervention']
     },
     
-    'ldl': {
+    'social_interaction': {
         'keywords': [
-            'ldl', 'ldl cholesterol', 'ldl-c', 'low density lipoprotein',
-            'bad cholesterol', 'beta lipoprotein', 'ldl direct', 'ldl calculated',
-            'ldl calc', 'ldl chol'
+            'social', 'interaction', 'eye contact', 'engagement',
+            'social skills', 'social behavior', 'social responsiveness'
         ],
         'must_have': [],
-        'exclude': ['ratio', 'total', 'vldl', 'oxidized']
+        'exclude': ['therapy', 'intervention']
     },
     
-    'triglycerides': {
+    # Pain & Comfort
+    'pain_assessment': {
         'keywords': [
-            'triglycerides', 'triglyceride', 'trig', 'trigs', 'tg',
-            'serum triglycerides', 'plasma triglycerides', 'tryglyceride'
+            'pain', 'comfort', 'pain scale', 'discomfort', 'faces scale',
+            'pain level', 'pain score', 'pain rating', 'comfort level'
         ],
         'must_have': [],
-        'exclude': ['ratio']
+        'exclude': ['medication', 'management']
     },
     
-    'alt': {
+    'sedation': {
         'keywords': [
-            'alt', 'alanine aminotransferase', 'sgpt', 'alanine transaminase',
-            'serum alt', 'liver alt', 'alt liver enzyme', 'gpt'
+            'sedation', 'sedated', 'calm', 'agitated', 'sedation level',
+            'consciousness level', 'arousal level', 'alertness level'
         ],
         'must_have': [],
-        'exclude': ['ratio', 'ast/alt']
-    },
-    
-    'ast': {
-        'keywords': [
-            'ast', 'aspartate aminotransferase', 'sgot', 'aspartate transaminase',
-            'serum ast', 'liver ast', 'ast liver enzyme', 'got'
-        ],
-        'must_have': [],
-        'exclude': ['ratio', 'ast/alt', 'DIASTOLIC', 'diastolic']
-    },
-    
-    'bun': {
-        'keywords': [
-            'bun', 'blood urea nitrogen', 'urea nitrogen', 'serum urea',
-            'blood urea', 'urea', 'serum bun', 'plasma urea'
-        ],
-        'must_have': [],
-        'exclude': ['ratio', 'bun/creatinine', 'pre-bun', 'post-bun']
-    },
-    
-    'creatinine': {
-        'keywords': [
-            'creatinine', 'serum creatinine', 'creat', 'cr', 'scr',
-            'plasma creatinine', 'blood creatinine', 'creatinine serum'
-        ],
-        'must_have': [],
-        'exclude': ['urine', 'clearance', 'ratio', 'kinase', 'ck', 'cpk']
-    },
-    
-    'egfr': {
-        'keywords': [
-            'egfr', 'estimated gfr', 'estimated glomerular filtration rate',
-            'gfr', 'glomerular filtration rate', 'kidney function',
-            'egfr mdrd', 'egfr ckd-epi', 'calculated gfr', 'e-gfr'
-        ],
-        'must_have': [],
-        'exclude': []
-    },
-    
-    'gad65_antibody': {
-        'keywords': [
-            'gad65', 'gad65 antibody', 'anti-gad65', 'anti gad65',
-            'glutamic acid decarboxylase 65', 'gad antibody',
-            'gada', 'anti-gad', 'gad autoantibody', 'gad-65'
-        ],
-        'must_have': [],
-        'exclude': []
-    },
-    
-    'ica512_antibody': {
-        'keywords': [
-            'ica512', 'ica512 antibody', 'anti-ica512', 'anti ica512',
-            'ia-2', 'ia2', 'ia-2 antibody', 'insulinoma antigen 2',
-            'islet cell antibody 512', 'anti-ia2', 'ica-512'
-        ],
-        'must_have': [],
-        'exclude': []
-    },
-    
-    'insulin_antibody': {
-        'keywords': [
-            'insulin antibody', 'anti-insulin', 'anti insulin',
-            'iaa', 'insulin autoantibody', 'anti-insulin antibody',
-            'insulin autoantibodies'
-        ],
-        'must_have': [],
-        'exclude': ['receptor', 'binding']
-    },
-    
-    'znt8_antibody': {
-        'keywords': [
-            'znt8', 'znt8 antibody', 'anti-znt8', 'anti znt8',
-            'zinc transporter 8', 'zinc transporter 8 antibody',
-            'znt8a', 'anti-znt8 antibody'
-        ],
-        'must_have': [],
-        'exclude': []
-    },
-    
-    'tsh': {
-        'keywords': [
-            'tsh', 'thyroid stimulating hormone', 'thyrotropin', 't.s.h.',
-            'thyroid stimulating hormone', 'thyrotropic hormone', 'tsh hormone',
-            'thyroid stim hormone'
-        ],
-        'must_have': [],
-        'exclude': ['receptor', 'antibody']
-    },
-    
-    'free_t4': {
-        'keywords': [
-            'free t4', 'free thyroxine', 'ft4', 'free t-4', 'thyroxine free',
-            'free tetraiodothyronine', 't4 free', 'thyroid hormone free t4',
-            'unbound t4', 'f-t4'
-        ],
-        'must_have': [],
-        'exclude': ['total', 'bound']
-    },
-    
-    't3': {
-        'keywords': [
-            't3', 'triiodothyronine', 't-3', 'total t3', 'serum t3',
-            'thyroid hormone t3', 'tri-iodothyronine', 'liothyronine'
-        ],
-        'must_have': [],
-        'exclude': ['free', 'reverse', 'rt3']
-    },
-    
-    'urine_microalbumin': {
-        'keywords': [
-            'urine microalbumin', 'microalbumin', 'microalbuminuria',
-            'urinary microalbumin', 'albumin urine', 'urine albumin',
-            'microalb', 'microalbumin urine', 'albumin microalbumin',
-            'urine protein albumin'
-        ],
-        'must_have': [],
-        'exclude': ['ratio', 'acr', 'uacr']
-    },
-    
-    'urine_creatinine': {
-        'keywords': [
-            'urine creatinine', 'creatinine urine', 'urinary creatinine',
-            'urine creat', '24hr creatinine', 'random urine creatinine',
-            'spot urine creatinine', '24 hour creatinine'
-        ],
-        'must_have': ['urine', 'urinary'],
-        'exclude': ['ratio', 'albumin', 'serum', 'plasma']
-    },
-    
-    'urine_microalbumin_creatinine_ratio': {
-        'keywords': [
-            'acr', 'uacr', 'albumin creatinine ratio', 'microalbumin creatinine ratio',
-            'albumin/creatinine', 'microalbumin/creatinine', 'alb/cr ratio',
-            'urine acr', 'urine albumin creatinine'
-        ],
-        'must_have': ['ratio'],
-        'exclude': []
-    },
-    
-    'urine_ketone': {
-        'keywords': [
-            'urine ketone', 'ketones', 'urine ketones', 'urinary ketones',
-            'ketone bodies', 'acetoacetate', 'beta-hydroxybutyrate',
-            'ketone urine', 'urine acetone'
-        ],
-        'must_have': [],
-        'exclude': ['serum', 'blood', 'plasma']
-    },
-    
-    'systolic_blood_pressure': {
-        'keywords': [
-            'systolic', 'systolic blood pressure', 'systolic bp', 'sbp',
-            'systolic pressure', 'sys bp', 'blood pressure systolic'
-        ],
-        'must_have': [],
-        'exclude': ['diastolic', 'mean']
-    },
-    
-    'diastolic_blood_pressure': {
-        'keywords': [
-            'diastolic', 'diastolic blood pressure', 'diastolic bp', 'dbp',
-            'diastolic pressure', 'dias bp', 'blood pressure diastolic'
-        ],
-        'must_have': [],
-        'exclude': ['systolic', 'mean']
-    },
-    
-    'venous_blood_ph': {
-        'keywords': [
-            'venous blood ph', 'venous ph', 'blood ph', 'ph venous',
-            'venous blood hydrogen', 'vbg ph', 'ph blood', 'arterial ph'
-        ],
-        'must_have': [],
-        'exclude': ['urine', 'gastric']
-    },
-    
-    'venous_blood_hco3': {
-        'keywords': [
-            'venous blood hco3', 'venous hco3', 'blood hco3', 'bicarbonate',
-            'hco3', 'venous bicarbonate', 'serum bicarbonate', 'co2',
-            'total co2', 'bicarb', 'hco3-'
-        ],
-        'must_have': [],
-        'exclude': ['arterial']
-    },
-    
-    'igf_1_z_score': {
-        'keywords': [
-            'igf-1 z-score', 'igf1 z-score', 'igf 1 z score', 'igf1 z score',
-            'insulin like growth factor 1 z score', 'igf-1 z score',
-            'igf1 standard deviation score', 'igf-1 sds', 'igf1 sds',
-            'somatomedin c z score'
-        ],
-        'must_have': [],
-        'exclude': []
-    },
-    
-    'igf_bp3_z_score': {
-        'keywords': [
-            'igf-bp3 z-score', 'igfbp3 z-score', 'igf bp3 z score', 'igfbp3 z score',
-            'insulin like growth factor binding protein 3 z score',
-            'igf-bp3 z score', 'igfbp-3 z-score', 'igfbp3 sds', 'igf-bp3 sds'
-        ],
-        'must_have': [],
-        'exclude': []
-    },
-    
-    'free_t3': {
-    'keywords': [
-        'free t3', 'free triiodothyronine', 'ft3', 'free t-3', 'triiodothyronine free',
-        'free tri-iodothyronine', 't3 free', 'thyroid hormone free t3',
-        'unbound t3', 'f-t3'
-    ],
-    'must_have': [],
-    'exclude': ['total', 'bound', 'reverse', 'rt3']
-},
-
-'glucose_2h_postprandial': {
-    'keywords': [
-        '2 hour glucose', '2h glucose postprandial', '2hr postprandial glucose',
-        'glucose 2 hours', 'postprandial glucose 2h', '2 hour post meal glucose',
-        'glucose 2hr post', '2h post glucose', 'glucose 120 min', 
-        'glucose 2 hours after meal', 'post meal glucose 2 hour'
-    ],
-    'must_have': ['glucose', 'gluc'],
-    'exclude': ['ogtt', 'tolerance', 'fasting']
-},
-
-'insulin_autoantibody': {
-    'keywords': [
-        'insulin autoantibody', 'insulin ab', 'insulin antibodies',
-        'anti-insulin autoantibody', 'insulin autoantibodies',
-        'iaa insulin', 'auto insulin antibody', 'insulin ab test'
-    ],
-    'must_have': [],
-    'exclude': ['receptor', 'binding', 'c-peptide']
+        'exclude': ['medication', 'drug']
+    }
 }
 
-}
-MAIN_DIAGNOSIS = {
-'ICD9': ['250.00', '250.02'],
-'ICD10': ['E11.', 'E11.0', 'E11.1', 'E11.2', 'E11.3', 'E11.4', 'E11.5', 'E11.6', 'E11.7', 'E11.8', 'E11.9']
+MAIN_DIAGNOSIS  = {
+    'ICD9': ['330.8'],
+    'ICD10': ['F84.2']
 }
 # Set to None to include all measurements:
 # MEASUREMENT_TYPES = None
 
 # Example: Demographics filter (optional)
 DEMOGRAPHICS_FILTER = {
-    'age_min': 8,
+    'age_min': 0,
     'age_max': 20,
     #'gender': ['Male', 'Female'],  # or use concept IDs: [8507, 8532]
     # 'race': ['White', 'Black', 'Asian']  # optional

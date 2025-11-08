@@ -7,7 +7,7 @@ import numpy as np
 import re
 # Configuration
 S3_BUCKET = 'dsw-sagemaker-dev-s3'
-S3_PREFIX = 'OMOP_data_extractions/T2D_Tosur/'
+S3_PREFIX = 'OMOP_data_extractions/T2D_Tosur_sep2025/'
 
 #### input
 DRUG_CLASSES = {
@@ -96,7 +96,7 @@ CONDITION_CODES = {
                 'E11.34', 'E13.34']
 },
 'Microalbuminuria': {
-    'ICD9': ['791.06'],
+    'ICD9': ['791.0'],
     'ICD10': ['R80.9']
 },
 'Neuropathy': {

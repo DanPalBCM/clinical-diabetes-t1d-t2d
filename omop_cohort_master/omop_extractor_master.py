@@ -655,6 +655,11 @@ def main():
 
     # Project configurations
     projects = [
+          {
+            'project_name': 'T2D_Tosur_sep2025',
+            'patient_file': "/home/sagemaker-user/T2D/data_T2D_Sep2025/T2D_Final_Sep2025.csv"
+            }, #completed!
+        # {
         # {
         #     'project_name': 'T2D_Tosur',
         #     'patient_file': "../data/T2DPopulation_7242025.xlsx"
@@ -663,10 +668,19 @@ def main():
         #     'project_name': 'T1D_Tosur',
         #     'patient_file': "../data/CROSSWALK_PATINENTIDS_person_id.csv"
         # },
-        {
-            'project_name': 'T1D_Mike',
-            'patient_file': "../data/Mike_T1D_person_id.csv"
-        }
+        # {
+        #     'project_name': 'T1D_Mike',
+        #     'patient_file': "../data/Mike_T1D_person_id.csv"
+        # }
+        # {
+        #     'project_name': 'Rett_syndrome',
+        #     'patient_file': "../data/Rett_syndrome/Rett_syndrome_subset_person_id.csv"
+        # },
+        # {
+        #     'project_name': 'Melax_Vishnu',
+        #     'patient_file': "../data/Melax_sleeping/Melax_person_id.csv"
+        # }
+
         # Add more projects as needed
     ]
 
