@@ -128,16 +128,16 @@ def analyze_hypoglycemia_groups(condition_df, person_df, dataset_name="Dataset")
     print(f"Total unique patients with conditions: {len(condition_df['PERSON_ID'].unique())}")
     
     print(f"\nGroup 1 - Severe Hypoglycemia: {len(severe_patients)} unique patients")
-    if len(severe_patients) > 0 and len(severe_patients) <= 10:
-        print(f"  Patient IDs: {sorted(list(severe_patients))[:10]}")
+    # NOTE: do not print raw PERSON_ID values here (real patient
+    # identifiers) -- counts only, for a public repo.
     
     print(f"\nGroup 2 - Unspecified Hypoglycemia: {len(unspecified_patients)} unique patients")
-    if len(unspecified_patients) > 0 and len(unspecified_patients) <= 10:
-        print(f"  Patient IDs: {sorted(list(unspecified_patients))[:10]}")
+    # NOTE: do not print raw PERSON_ID values here (real patient
+    # identifiers) -- counts only, for a public repo.
     
     print(f"\nGroup 3 - Seizures: {len(seizure_patients)} unique patients")
-    if len(seizure_patients) > 0 and len(seizure_patients) <= 10:
-        print(f"  Patient IDs: {sorted(list(seizure_patients))[:10]}")
+    # NOTE: do not print raw PERSON_ID values here (real patient
+    # identifiers) -- counts only, for a public repo.
     
     # Check overlaps between groups
     print(f"\nOverlaps between groups:")
@@ -277,9 +277,8 @@ def main():
         print(f"  {percent_absent:.1f}% of T1D severe hypoglycemia patients ARE NOT in hypoglycemia dataset")
         
         # Show sample of missing patients if there are any
-        if len(not_in_hypo) > 0 and len(not_in_hypo) <= 20:
-            print(f"\nPatient IDs with severe hypoglycemia NOT in hypoglycemia dataset:")
-            print(f"  {sorted(list(not_in_hypo))[:20]}")
+        # NOTE: do not print raw PERSON_ID values here (real patient
+        # identifiers) -- counts only, for a public repo.
     
     # Export results to CSV for further analysis
     print("\n" + "="*60)
@@ -298,7 +297,10 @@ def main():
     summary_df.to_csv('hypoglycemia_analysis_summary.csv', index=False)
     print("✓ Summary saved to: hypoglycemia_analysis_summary.csv")
     
-    # Export patient lists for severe hypoglycemia
+    # Export patient lists for severe hypoglycemia.
+    # WARNING: these .to_csv() calls write real PERSON_ID values to local
+    # files. Never commit their output to this repository -- these files
+    # must stay local/gitignored when run against real data.
     if len(t1d_severe) > 0:
         # All severe hypoglycemia patients from T1D cohort
         pd.DataFrame({'PERSON_ID': sorted(list(t1d_severe))}).to_csv(

@@ -631,7 +631,11 @@ def compute(input_dataset, omop_measurements, output):
     # =========================================================================
     # STEP 10: EXCLUDE SPECIFIC PATIENT
     # =========================================================================
+    # Real MRN redacted for public release. Supply the actual value via a
+    # private, non-committed override when running this transform inside
+    # Foundry -- do not restore it by editing this file in place.
+    EXCLUDED_PATIENT_MRN = "REDACTED_MRN"
 
-    df = df.filter(F.col("mrn").cast("string") != "REDACTED_MRN")
+    df = df.filter(F.col("mrn").cast("string") != EXCLUDED_PATIENT_MRN)
 
     output.write_dataframe(df)

@@ -216,8 +216,8 @@ def perform_venn_analysis(df1, df2_with_mrn):
     mrns_dataset1 = set(df1[mrn_col].dropna().unique())
     mrns_dataset1.discard('nan')  # Remove 'nan' string if present
     print(f"Unique MRNs in dataset 1: {len(mrns_dataset1)}")
-    
-    print(mrns_dataset1)
+    # NOTE: do not print raw MRN values here (real patient identifiers) --
+    # counts only, for a public repo.
     # Get unique MRNs from dataset 2 (now with MRN column added)
     df2_with_mrn['MRN'] = df2_with_mrn['MRN'].apply(lambda x: str(int(x)) if isinstance(x, float) and not pd.isna(x) else str(x))
 
@@ -225,7 +225,8 @@ def perform_venn_analysis(df1, df2_with_mrn):
     mrns_dataset2.discard('nan')  # Remove 'nan' string if present
     mrns_dataset2 = {mrn[:-2] for mrn in mrns_dataset2}
     print(f"Unique MRNs in dataset 2 (after mapping): {len(mrns_dataset2)}")
-    print(mrns_dataset2)
+    # NOTE: do not print raw MRN values here (real patient identifiers) --
+    # counts only, for a public repo.
     # Calculate overlaps
     overlap = mrns_dataset1.intersection(mrns_dataset2)
     only_dataset1 = mrns_dataset1 - mrns_dataset2
@@ -240,9 +241,8 @@ def perform_venn_analysis(df1, df2_with_mrn):
     print(f"4. Patients ONLY in Dataset 1 (CPT T1D): {len(only_dataset1)}")
     print(f"5. Patients ONLY in Dataset 2 (TCH): {len(only_dataset2)}")
     
-    # Print some sample overlapping MRNs for verification
-    if len(overlap) > 0:
-        print(f"\nSample of overlapping MRNs (first 5): {list(overlap)[:5]}")
+    # NOTE: do not print raw MRN values here (real patient identifiers) --
+    # counts only, for a public repo.
     
     # Create Venn diagram
     plt.figure(figsize=(10, 6))

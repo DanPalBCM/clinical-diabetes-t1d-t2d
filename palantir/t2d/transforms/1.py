@@ -19,26 +19,30 @@ def compute(a1c_dataset, demographics, crossreference):
     """
 
     # ============================================================================
-    # STEP 0: Manual corrections by review done on 2/24/2026 by Mustafa and Daniel
-    # - Remove patients MASKED and MASKED (confirmed correct, excluded per review)
-    # - Correct diagnosis date for patient MASKED to 2016-07-17, age at diagnosis to 13
+    # STEP 0: Manual corrections by review done on 2/24/2026.
+    # - Remove two reviewed patients (real MRNs redacted for public release).
+    # - Correct diagnosis date/age at diagnosis for one reviewed patient (real
+    #   MRN, date, and age redacted for public release).
+    # Supply the real values via a private, non-committed override when running
+    # this transform inside Foundry -- do not restore them by editing this file.
     # ============================================================================
-    patients_to_remove = ["MASKED", "MASKED"]
+    patients_to_remove = ["REDACTED_MRN_1", "REDACTED_MRN_2"]
     a1c_dataset = a1c_dataset.filter(
         ~F.col("mrn").cast("string").isin(patients_to_remove)
     )
 
+    DIAGNOSIS_CORRECTION_MRN = "REDACTED_MRN_3"
     a1c_dataset = a1c_dataset.withColumn(
         "date_of_diagnosis",
         F.when(
-            F.col("mrn").cast("string") == "MASKED",
-            F.to_date(F.lit("2016-07-17"))
+            F.col("mrn").cast("string") == DIAGNOSIS_CORRECTION_MRN,
+            F.to_date(F.lit("1900-01-01"))  # placeholder; see redaction note above
         ).otherwise(F.col("date_of_diagnosis"))
     ).withColumn(
         "age_at_diagnosis",
         F.when(
-            F.col("mrn").cast("string") == "MASKED",
-            F.lit(13)
+            F.col("mrn").cast("string") == DIAGNOSIS_CORRECTION_MRN,
+            F.lit(-1)
         ).otherwise(F.col("age_at_diagnosis"))
     )
 
